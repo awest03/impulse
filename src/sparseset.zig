@@ -39,16 +39,22 @@ pub fn SparseSet(T: type, IndexType: type) type {
         }
 
         pub fn insert(self: *@This(), id: IndexType, value: T) SparseSetError!void {
-            const index = if (self.sparse[id] == self.sparse.len) {
+            const index = if (self.sparse[id] == self.sparse.len) label: {
                 if (self.size == self.sparse.len) return SparseSetError.full;
                 // New item
                 defer self.size += 1;
                 self.sparse[id] = self.size;
                 self.dense_indices[self.size] = id;
-                self.size;
+                break :label self.size;
             } else self.sparse[id];
 
             self.dense[index] = value;
+        }
+
+        // Note: pointer only valid until remove is called
+        pub fn get(self: *@This(), id: IndexType) SparseSetError!*T {
+            if (self.sparse[id] == self.sparse.len) return SparseSetError.invalid_id;
+            return &self.dense[self.sparse[id]];
         }
 
         pub fn remove(self: *@This(), id: IndexType) SparseSetError!void {

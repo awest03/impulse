@@ -6,6 +6,7 @@ pub fn Ringbuffer(T: type) type {
     return struct {
         head: usize,
         tail: usize,
+        occupancy: usize,
         buffer: []T,
 
         pub fn init(size: usize, allocator: std.mem.Allocator) !@This() {
@@ -15,6 +16,7 @@ pub fn Ringbuffer(T: type) type {
             return @This(){
                 .head = 0,
                 .tail = 0,
+                .occupancy = 0,
                 .buffer = buffer,
             };
         }
@@ -25,16 +27,18 @@ pub fn Ringbuffer(T: type) type {
         }
 
         pub fn full(self: *@This()) bool {
-            return (self.tail + 1) % self.buffer.len == self.head;
+            return self.occupancy == self.buffer.len;
         }
 
         pub fn empty(self: *@This()) bool {
-            return self.head == self.tail;
+            return self.occupancy == 0;
         }
 
         pub fn pop(self: *@This()) ?T {
+            std.debug.print("Occupancy: {d}\n", .{self.occupancy});
             if (self.empty()) return null;
 
+            self.occupancy -= 1;
             defer self.head = (self.head + 1) % self.buffer.len;
             return self.buffer[self.head];
         }
@@ -44,6 +48,7 @@ pub fn Ringbuffer(T: type) type {
 
             self.buffer[self.tail] = value;
             self.tail = (self.tail + 1) % self.buffer.len;
+            self.occupancy += 1;
         }
     };
 }

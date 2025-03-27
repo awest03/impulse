@@ -1,6 +1,6 @@
 const rl = @import("raylib");
 const std = @import("std");
-const ss = @import("sparseset.zig");
+const phys = @import("physics.zig");
 
 pub fn main() !void {
     const w = 800;
@@ -9,19 +9,53 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
+    var world = try phys.World.init(arena.allocator(), 10);
+    defer world.deinit(arena.allocator());
+    var updater = phys.FixedStepUpdater.init(1 / 60);
+
+    const material = phys.Material{
+        .density = 1.0,
+        .dynamic_friction = 1.0,
+        .restitution = 1.0,
+        .static_friction = 1.0,
+    };
+
+    const body_id = try world.createBody(@splat(100), &material, phys.Shape{ .circle = phys.Circle{ .radius = 100 } });
+
     rl.initWindow(w, h, "Impulse");
     defer rl.closeWindow();
 
     rl.setTargetFPS(60);
 
-    _ = try ss.SparseSet(@Vector(2, f32), u16).init(10, arena.allocator());
-
     while (!rl.windowShouldClose()) {
+        updater.update(&world, rl.getFrameTime());
+        var b = try world.bodies.get(body_id);
+        b.force = phys.Vec2{ 0, -10 };
+        std.debug.print("{d}, {d} | {d}, {d} | {d}, {d}\n", .{ b.position[0], b.position[1], b.velocity[0], b.velocity[1], b.force[0], b.force[1] });
+
         rl.beginDrawing();
         defer rl.endDrawing();
 
         rl.clearBackground(.white);
 
+        drawBody(b, rl.Color.purple);
         rl.drawText("First Window", 190, 200, 20, .purple);
+    }
+}
+
+fn drawBody(body: *const phys.Body, colour: rl.Color) void {
+    switch (body.shape) {
+        phys.Shape.aabb => |aabb| {
+            const r = rl.Rectangle{
+                .x = body.position[0],
+                .y = -body.position[1],
+                .width = aabb.half_extents[0] * 2,
+                .height = aabb.half_extents[1] * 2,
+            };
+            rl.drawRectangleRec(r, colour);
+        },
+        phys.Shape.circle => |circle| {
+            rl.drawCircle(@as(i32, @intFromFloat(body.position[0])), @as(i32, @intFromFloat(body.position[1])), circle.radius, colour);
+        },
     }
 }
