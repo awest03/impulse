@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-const SparseSetError = error{ invalid_id, full };
+pub const SparseSetError = error{ invalid_id, full };
 
 pub fn SparseSet(T: type, IndexType: type) type {
     return struct {
@@ -11,7 +11,7 @@ pub fn SparseSet(T: type, IndexType: type) type {
         dense_indices: []IndexType,
         dense: []T,
 
-        pub fn init(allocator: std.mem.Allocator, capacity: IndexType) !@This() {
+        pub fn init(capacity: IndexType, allocator: std.mem.Allocator) !@This() {
             const sparse = try allocator.alloc(IndexType, capacity);
             errdefer allocator.free(sparse);
             const dense_indices = try allocator.alloc(IndexType, capacity);

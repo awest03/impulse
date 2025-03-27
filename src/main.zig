@@ -1,6 +1,6 @@
 const rl = @import("raylib");
 const std = @import("std");
-const sparse_set = @import("sparse_set.zig");
+const ss = @import("sparseset.zig");
 
 pub fn main() !void {
     const w = 800;
@@ -14,7 +14,7 @@ pub fn main() !void {
 
     rl.setTargetFPS(60);
 
-    _ = try sparse_set.SparseSet(@Vector(2, f32), u16).init(arena.allocator(), 10);
+    _ = try ss.SparseSet(@Vector(2, f32), u16).init(10, arena.allocator());
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
