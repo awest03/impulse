@@ -21,7 +21,7 @@ pub fn main() !void {
     };
 
     const body_id = try world.createBody(phys.Vec2{ 200.0, -100.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 50.0 } });
-    const body2_id = try world.createBody(phys.Vec2{ 150.0, -300.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 100.0 } });
+    _ = try world.createBody(phys.Vec2{ 150.0, -300.0 }, &material, phys.Shape{ .aabb = phys.AABB{ .half_extents = phys.Vec2{ 100.0, 50.0 } } });
 
     rl.initWindow(w, h, "Impulse");
     defer rl.closeWindow();
@@ -38,8 +38,13 @@ pub fn main() !void {
 
         rl.clearBackground(.white);
 
-        drawBody(b, rl.Color.purple);
-        drawBody(try world.bodies.get(body2_id), rl.Color.blue);
+        drawWorld(&world);
+    }
+}
+
+fn drawWorld(world: *const phys.World) void {
+    for (0..world.bodies.size) |i| {
+        drawBody(&world.bodies.dense[i], rl.Color.purple);
     }
 }
 
@@ -52,7 +57,7 @@ fn drawBody(body: *const phys.Body, colour: rl.Color) void {
                 .width = aabb.half_extents[0] * 2,
                 .height = aabb.half_extents[1] * 2,
             };
-            rl.drawRectangleRec(r, colour);
+            rl.drawRectanglePro(r, rl.Vector2{ .x = aabb.half_extents[0], .y = aabb.half_extents[1] }, 0, colour);
         },
         phys.Shape.circle => |circle| {
             rl.drawCircle(@as(i32, @intFromFloat(body.position[0])), @as(i32, @intFromFloat(-body.position[1])), circle.radius, colour);
