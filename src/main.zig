@@ -11,27 +11,26 @@ pub fn main() !void {
 
     var world = try phys.World.init(arena.allocator(), 10);
     defer world.deinit(arena.allocator());
-    var updater = phys.FixedStepUpdater.init(1 / 60);
+    var updater = phys.FixedStepUpdater.init(1.0 / 60.0);
 
     const material = phys.Material{
-        .density = 1.0,
+        .density = 100.0,
         .dynamic_friction = 1.0,
         .restitution = 1.0,
         .static_friction = 1.0,
     };
 
-    const body_id = try world.createBody(@splat(100), &material, phys.Shape{ .circle = phys.Circle{ .radius = 100 } });
+    const body_id = try world.createBody(phys.Vec2{ 100.0, -100.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 100.0 } });
 
     rl.initWindow(w, h, "Impulse");
     defer rl.closeWindow();
 
-    rl.setTargetFPS(60);
+    rl.setTargetFPS(60.0);
 
     while (!rl.windowShouldClose()) {
         updater.update(&world, rl.getFrameTime());
         var b = try world.bodies.get(body_id);
-        b.force = phys.Vec2{ 0, -10 };
-        std.debug.print("{d}, {d} | {d}, {d} | {d}, {d}\n", .{ b.position[0], b.position[1], b.velocity[0], b.velocity[1], b.force[0], b.force[1] });
+        b.force = phys.Vec2{ 0.0, -9.8 * 1.0 / b.inv_mass };
 
         rl.beginDrawing();
         defer rl.endDrawing();
@@ -39,7 +38,6 @@ pub fn main() !void {
         rl.clearBackground(.white);
 
         drawBody(b, rl.Color.purple);
-        rl.drawText("First Window", 190, 200, 20, .purple);
     }
 }
 
@@ -55,7 +53,7 @@ fn drawBody(body: *const phys.Body, colour: rl.Color) void {
             rl.drawRectangleRec(r, colour);
         },
         phys.Shape.circle => |circle| {
-            rl.drawCircle(@as(i32, @intFromFloat(body.position[0])), @as(i32, @intFromFloat(body.position[1])), circle.radius, colour);
+            rl.drawCircle(@as(i32, @intFromFloat(body.position[0])), @as(i32, @intFromFloat(-body.position[1])), circle.radius, colour);
         },
     }
 }

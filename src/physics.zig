@@ -18,7 +18,7 @@ fn dotVec2(a: Vec2, b: Vec2) f32 {
 }
 
 fn normaliseVec2(a: Vec2) Vec2 {
-    return scaleVec2(a, 1 / @sqrt(dotVec2(a, a)));
+    return scaleVec2(a, 1.0 / @sqrt(dotVec2(a, a)));
 }
 
 fn scaleVec2(a: Vec2, scale: f32) Vec2 {
@@ -69,7 +69,7 @@ pub const Body = struct {
     force: Vec2,
 
     pub fn recalculateMass(self: *Body) void {
-        self.inv_mass = 1 / (self.material.density * self.shape.area());
+        self.inv_mass = 1.0 / (self.material.density * self.shape.area());
     }
 };
 
@@ -106,7 +106,7 @@ pub const Manifold = struct {
 
         var rv = b.velocity - a.velocity;
         const v_normal = dotVec2(rv, self.normal);
-        if (v_normal > 0) return; // Do nothing, velocities are separating
+        if (v_normal > 0.0) return; // Do nothing, velocities are separating
         const e = @min(ma.restitution, mb.restitution);
         const j = -(1 + e) * v_normal / (a.inv_mass + b.inv_mass);
         const impulse = scaleVec2(self.normal, j);
@@ -144,14 +144,14 @@ pub const Manifold = struct {
 
         const n = b.position - a.position;
         const x_overlap = a.shape.aabb.half_extents[0] + b.shape.aabb.half_extents[0] - @abs(n[0]);
-        if (x_overlap > 0) {
+        if (x_overlap > 0.0) {
             const y_overlap = a.shape.aabb.half_extents[1] + b.shape.aabb.half_extents[1] - @abs(n[1]);
-            if (y_overlap > 0) {
+            if (y_overlap > 0.0) {
                 if (x_overlap < y_overlap) {
-                    manifold.normal = Vec2{ if (n[0] < 0) -1 else 1, 0 };
+                    manifold.normal = Vec2{ if (n[0] < 0.0) -1.0 else 1.0, 0.0 };
                     manifold.penetration = x_overlap;
                 } else {
-                    manifold.normal = Vec2{ 0, if (n[1] < 0) -1 else 1 };
+                    manifold.normal = Vec2{ 0.0, if (n[1] < 0.0) -1.0 else 1.0 };
                     manifold.penetration = y_overlap;
                 }
                 return true;
@@ -169,9 +169,9 @@ pub const Manifold = struct {
         var closest = Vec2{ std.math.clamp(n[0], -half_extents[0], half_extents[0]), std.math.clamp(n[1], -half_extents[1], half_extents[1]) };
         const inside = if (approxEqVec2(n, closest)) label: {
             if (@abs(n[0]) > @abs(n[1])) { // Find closest axis
-                closest[0] = if (closest[0] > 0) half_extents[0] else -half_extents[0];
+                closest[0] = if (closest[0] > 0.0) half_extents[0] else -half_extents[0];
             } else {
-                closest[1] = if (closest[1] > 0) half_extents[1] else -half_extents[1];
+                closest[1] = if (closest[1] > 0.0) half_extents[1] else -half_extents[1];
             }
             break :label true;
         } else false;
@@ -206,9 +206,9 @@ pub const Manifold = struct {
         if (d2 > r * r) return false;
 
         const d = @sqrt(d2);
-        if (d != 0) {
+        if (d != 0.0) {
             manifold.penetration = r - d;
-            manifold.normal = scaleVec2(n, 1 / d);
+            manifold.normal = scaleVec2(n, 1.0 / d);
         } else {
             manifold.penetration = a.shape.circle.radius;
             manifold.normal = Vec2{ 1.0, 0.0 };
@@ -262,19 +262,19 @@ pub const World = struct {
             .velocity = @splat(0),
             .force = @splat(0),
         });
+        (try self.bodies.get(id)).recalculateMass();
         return id;
     }
 
     pub fn update(self: *World, dt: f32) void {
-        std.debug.print("Updating", .{});
         // Apply Forces
         for (0..self.bodies.size) |i| {
-            const body = &self.bodies.dense[i];
+            var body = &self.bodies.dense[i];
             // Recalculate Mass
             body.recalculateMass();
             // Integrate Forces
             body.velocity += scaleVec2(body.force, body.inv_mass * dt);
-            body.force = @splat(0);
+            body.force = @splat(0.0);
         }
         self.broadPhase();
         self.calculateManifolds();
@@ -284,7 +284,7 @@ pub const World = struct {
         }
         // Apply Velocities
         for (0..self.bodies.size) |i| {
-            var body = self.bodies.dense[i];
+            var body = &self.bodies.dense[i];
             body.position += scaleVec2(body.velocity, dt);
         }
         // Apply Positional Correction
@@ -297,7 +297,7 @@ pub const World = struct {
         var index: u32 = 0;
         for (0..self.bodies.size) |i| {
             for ((i + 1)..self.bodies.size) |j| {
-                self.manifolds[index] = Manifold{ .a = &self.bodies.dense[i], .b = &self.bodies.dense[j], .penetration = 0, .normal = @splat(0) };
+                self.manifolds[index] = Manifold{ .a = &self.bodies.dense[i], .b = &self.bodies.dense[j], .penetration = 0.0, .normal = @splat(0.0) };
                 index += 1;
             }
         }
@@ -321,14 +321,14 @@ pub const World = struct {
 
 // Updates the physics world at a fixed rate for determinism
 pub const FixedStepUpdater = struct {
-    const max_accumulated: f32 = 5; // maximum number of frames to accumulate
+    const max_accumulated: f32 = 5.0; // maximum number of frames to accumulate
     dt: f32,
     accumulator: f32,
 
     pub fn init(dt: f32) FixedStepUpdater {
         return FixedStepUpdater{
             .dt = dt,
-            .accumulator = 0,
+            .accumulator = 0.0,
         };
     }
 
@@ -337,7 +337,6 @@ pub const FixedStepUpdater = struct {
         // Prevent Death Spiral
         if (self.accumulator > max_accumulated * self.dt)
             self.accumulator = max_accumulated * self.dt;
-        std.debug.print("Accumulated {d} from {d}\n", .{ self.accumulator, frame_time });
         // Update the world
         while (self.accumulator > self.dt) {
             world.update(self.dt);
