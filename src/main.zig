@@ -20,7 +20,8 @@ pub fn main() !void {
         .static_friction = 1.0,
     };
 
-    const body_id = try world.createBody(phys.Vec2{ 100.0, -100.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 100.0 } });
+    const body_id = try world.createBody(phys.Vec2{ 200.0, -100.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 50.0 } });
+    const body2_id = try world.createBody(phys.Vec2{ 150.0, -300.0 }, &material, phys.Shape{ .circle = phys.Circle{ .radius = 100.0 } });
 
     rl.initWindow(w, h, "Impulse");
     defer rl.closeWindow();
@@ -38,6 +39,7 @@ pub fn main() !void {
         rl.clearBackground(.white);
 
         drawBody(b, rl.Color.purple);
+        drawBody(try world.bodies.get(body2_id), rl.Color.blue);
     }
 }
 

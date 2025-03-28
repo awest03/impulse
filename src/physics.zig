@@ -18,7 +18,7 @@ fn dotVec2(a: Vec2, b: Vec2) f32 {
 }
 
 fn normaliseVec2(a: Vec2) Vec2 {
-    return scaleVec2(a, 1.0 / @sqrt(dotVec2(a, a)));
+    return if (a[0] == 0.0 and a[1] == 0.0) a else scaleVec2(a, 1.0 / @sqrt(dotVec2(a, a)));
 }
 
 fn scaleVec2(a: Vec2, scale: f32) Vec2 {
@@ -115,7 +115,7 @@ pub const Manifold = struct {
 
         // Apply Friction
         rv = b.velocity - a.velocity;
-        const tangent = normaliseVec2(rv - (scaleVec2(self.normal, dotVec2(rv, self.normal))));
+        const tangent = normaliseVec2(rv - scaleVec2(self.normal, dotVec2(rv, self.normal)));
         const jt = -dotVec2(rv, tangent) / (a.inv_mass + b.inv_mass);
         const mu = pythagoras(ma.static_friction, mb.static_friction);
         const friction_impulse = if (@abs(jt) < j * mu) scaleVec2(tangent, jt) else label: {
@@ -307,7 +307,7 @@ pub const World = struct {
     fn calculateManifolds(self: *World) void {
         var i: u32 = 0;
         while (i < self.manifold_count) {
-            var m = self.manifolds[i];
+            var m = &self.manifolds[i];
             if (!m.calculate()) { // No collision, remove manifold
                 self.manifold_count -= 1;
                 if (self.manifold_count == 0) break;
